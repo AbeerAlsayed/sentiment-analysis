@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enum\SentimentEnum;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class GetCommentsByTopicRequest extends FormRequest
 {
@@ -24,7 +25,10 @@ class GetCommentsByTopicRequest extends FormRequest
     {
         return [
             'topic_name' => 'nullable|string',  // `topic_name` اختياري
-            'sentiment' => 'nullable|in:positive,negative',  // `sentiment` اختياري ويمكن أن يكون إما 'positive' أو 'negative'
+            'sentiment' => [
+                'nullable',
+                Rule::in(SentimentEnum::getValues()),  // تحقق من القيمة في SentimentEnum
+            ],
         ];
     }
 

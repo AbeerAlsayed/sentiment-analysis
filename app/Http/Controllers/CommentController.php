@@ -7,57 +7,42 @@ use App\Http\Requests\GetCommentsByTopicRequest;
 use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Models\Topic;
+use App\Services\SentimentAnalysisService;
 use Illuminate\Http\Request;
 use App\Services\CommentService;
 
 class CommentController extends Controller
 {
     protected $commentService;
+    protected $sentimentService;
 
     // حقن الـ Service في الـ Controller
-    public function __construct(CommentService $commentService)
+    public function __construct(CommentService $commentService,SentimentAnalysisService $sentimentService)
     {
         $this->commentService = $commentService;
+        $this->sentimentService = $sentimentService;
+
     }
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
-    }
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'topic_id' => 'required|exists:topics,id',
+            'content' => 'required|string',
+        ]);
+        // تحليل المشاعر
+        $sentiment = $this->sentimentService->analyze($validated['content']);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        // تخزين التعليق في قاعدة البيانات
+        $comment = Comment::create([
+            'user_id' => $validated['user_id'],
+            'topic_id' => $validated['topic_id'],
+            'content' => $validated['content'],
+            'sentiment' => $sentiment,
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json(new CommentResource($comment), 201);
     }
 
     public function getCommentsByTopic(GetCommentsByTopicRequest $request)
