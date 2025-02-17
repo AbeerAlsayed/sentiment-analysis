@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Comment;
 use App\Models\Topic;
@@ -28,23 +27,27 @@ class CommentSeeder extends Seeder
             'Not reliable at all, would not recommend it.'
         ];
 
-        $topics = Topic::all(); // جلب جميع المواضيع (شركات السيارات)
+        $topics = Topic::all(); // جلب جميع المواضيع
         $users = User::all();   // جلب جميع المستخدمين
 
         if ($topics->isEmpty() || $users->isEmpty()) {
-            return; // التأكد من وجود بيانات في الجداول قبل الإدخال
+            return; // التأكد من وجود بيانات قبل الإدراج
         }
 
         foreach ($topics as $topic) {
-            for ($i = 0; $i < 5; $i++) { // إنشاء 5 تعليقات لكل موضوع
+            // عدد عشوائي من التعليقات لكل موضوع (من 3 إلى 7)
+            $commentCount = rand(3, 7);
+            $selectedUsers = $users->random(min($commentCount, $users->count())); // اختيار مستخدمين عشوائيًا
+
+            foreach ($selectedUsers as $user) {
                 $isPositive = rand(0, 1); // تحديد إذا كان التعليق إيجابي أو سلبي
                 $text = $isPositive ? $positiveComments[array_rand($positiveComments)] : $negativeComments[array_rand($negativeComments)];
                 $sentiment = $isPositive ? 'positive' : 'negative';
 
                 Comment::create([
                     'content' => $text,
-                    'user_id' => $users->random()->id, // اختيار مستخدم عشوائي
-                    'topic_id' => $topic->id,
+                    'user_id' => $user->id, // مستخدم عشوائي لكل تعليق
+                    'topic_id' => $topic->id, // نفس الموضوع لكل مجموعة تعليقات
                     'sentiment' => $sentiment,
                 ]);
             }

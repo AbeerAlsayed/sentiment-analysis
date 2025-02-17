@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enum\SentimentEnum;
 use App\Http\Requests\GetCommentsByTopicRequest;
 use App\Http\Resources\CommentResource;
+use App\Http\Resources\FilterTopicResource;
 use App\Models\Comment;
 use App\Models\Topic;
 use App\Services\SentimentAnalysisService;
@@ -27,7 +28,6 @@ class CommentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
             'topic_id' => 'required|exists:topics,id',
             'content' => 'required|string',
         ]);
@@ -36,7 +36,7 @@ class CommentController extends Controller
 
         // تخزين التعليق في قاعدة البيانات
         $comment = Comment::create([
-            'user_id' => $validated['user_id'],
+            'user_id' => auth()->user()->id,
             'topic_id' => $validated['topic_id'],
             'content' => $validated['content'],
             'sentiment' => $sentiment,
@@ -47,18 +47,55 @@ class CommentController extends Controller
 
     public function getCommentsByTopic(GetCommentsByTopicRequest $request)
     {
-        // الحصول على `topic_name` و `sentiment` إذا كانا موجودين في الطلب
         $topicName = $request->input('topic_name');  // اختياري
         $sentiment = $request->input('sentiment');    // اختياري
 
-        // تحويل `sentiment` إلى Enum إذا تم تمريره
         if ($sentiment) {
             $sentiment = SentimentEnum::from($sentiment);  // تحويل النص إلى Enum
         }
-        // جلب التعليقات باستخدام CommentService مع تطبيق الفلاتر
-        $comments = $this->commentService->getCommentsByFilters($topicName, $sentiment);
 
-        // إرجاع التعليقات باستخدام CommentResource
+        $comments = $this->commentService->getCommentsByFilters($topicName, $sentiment);
         return CommentResource::collection($comments);
     }
+
+    public function getCommentsByUser(Request $request)
+    {
+        $user = auth()->user();
+
+        $topicId = $request->input('topic_id');
+        $sentiment = $request->input('sentiment');
+
+        $query = Comment::where('user_id', $user->id)->with('topic');
+
+        if ($topicId) {
+            $query->where('topic_id', $topicId);
+        }
+
+        // إضافة الفلتر حسب `sentiment` إذا كان موجوداً
+        if ($sentiment) {
+            $query->where('sentiment', $sentiment);
+        }
+
+        // جلب التعليقات
+        $comments = $query->get();
+
+        // إرجاع التعليقات مع المواضيع باستخدام CommentResource
+        return CommentResource::collection($comments);
+    }
+
+    public function getTopicsWithUserComments()
+    {
+        $user = auth()->user();
+
+        $topics = Topic::with(['comments' => function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        }])->get();
+
+        $filteredTopics = $topics->filter(function ($topic) {
+            return $topic->comments->isNotEmpty();
+        });
+
+        return FilterTopicResource::collection($filteredTopics);
+    }
+
 }
