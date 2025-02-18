@@ -20,7 +20,7 @@ class TopicSeeder extends Seeder
             ],
             [
                 'name' => 'BMW',
-                'image' => 'BMW.svg'
+                'image' => 'BMW.png'
             ],
         ];
 

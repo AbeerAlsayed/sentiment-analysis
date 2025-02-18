@@ -54,7 +54,17 @@ class CommentController extends Controller
             $sentiment = SentimentEnum::from($sentiment);  // تحويل النص إلى Enum
         }
 
+        // إذا لم يتم اختيار topic_name، اختر أول توبيك
+        if (!$topicName) {
+            // جلب أول توبيك من قاعدة البيانات
+            $topic = Topic::first(); // أو يمكنك إضافة شرط لترتيب المواضيع إذا كنت بحاجة لذلك
+            $topicName = $topic ? $topic->name : null; // إذا كان يوجد توبيك، خذ اسمه
+        }
+
+        // الحصول على التعليقات بناءً على الفلاتر
         $comments = $this->commentService->getCommentsByFilters($topicName, $sentiment);
+
+        // إرجاع التعليقات
         return CommentResource::collection($comments);
     }
 
