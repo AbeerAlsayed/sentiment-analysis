@@ -13,17 +13,22 @@ class SentimentAnalysisService
     protected $vectorizer;
     protected $tfidfTransformer;
     protected $modelPath;
+    protected $vectorizerPath;
+    protected $tfidfPath;
 
     public function __construct()
     {
         $this->modelPath = storage_path('app/model.dat');
+        $this->vectorizerPath = storage_path('app/vectorizer.dat');
+        $this->tfidfPath = storage_path('app/tfidf.dat');
 
         $this->vectorizer = new TokenCountVectorizer(new WhitespaceTokenizer());
         $this->tfidfTransformer = new TfidfTransformer();
 
-        // تحميل النموذج إذا كان موجودًا، وإلا تدريبه
-        if (file_exists($this->modelPath)) {
+        if (file_exists($this->modelPath) && file_exists($this->vectorizerPath) && file_exists($this->tfidfPath)) {
             $this->model = unserialize(file_get_contents($this->modelPath));
+            $this->vectorizer = unserialize(file_get_contents($this->vectorizerPath));
+            $this->tfidfTransformer = unserialize(file_get_contents($this->tfidfPath));
         } else {
             $this->trainModel();
         }
@@ -79,6 +84,8 @@ class SentimentAnalysisService
         $this->model->train($comments, $labels);
 
         file_put_contents($this->modelPath, serialize($this->model));
+        file_put_contents($this->vectorizerPath, serialize($this->vectorizer));
+        file_put_contents($this->tfidfPath, serialize($this->tfidfTransformer));
     }
 
     public function analyze($commentText)
@@ -90,6 +97,10 @@ class SentimentAnalysisService
         $transformedComment = [$this->cleanText($commentText)];
         $this->vectorizer->transform($transformedComment);
         $this->tfidfTransformer->transform($transformedComment);
+
+        if (count($transformedComment[0]) !== count($this->vectorizer->getVocabulary())) {
+            throw new \Exception("Feature mismatch: Ensure the model and test data have the same feature set.");
+        }
 
         return $this->model->predict($transformedComment)[0];
     }

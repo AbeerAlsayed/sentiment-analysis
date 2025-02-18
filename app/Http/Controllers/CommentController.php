@@ -47,6 +47,7 @@ class CommentController extends Controller
 
     public function getCommentsByTopic(GetCommentsByTopicRequest $request)
     {
+        dd($request);
         $topicName = $request->input('topic_name');  // اختياري
         $sentiment = $request->input('sentiment');    // اختياري
 
