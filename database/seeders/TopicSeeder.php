@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Topic;
 
@@ -13,21 +12,26 @@ class TopicSeeder extends Seeder
         $topics = [
             [
                 'name' => 'Toyota',
-                'image' => 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_logo.png'
+                'image' => 'Toyota_logo.png'
             ],
             [
                 'name' => 'Mercedes-Benz',
-                'image' => 'https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.png'
+                'image' => 'Mercedes-Logo.png'
             ],
             [
                 'name' => 'BMW',
-                'image' => 'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg'
+                'image' => 'BMW.svg'
             ],
         ];
 
+        // Loop through topics and create them
         foreach ($topics as $topic) {
-            Topic::create($topic);
+            // Save the topic with the image URL pointing to the public directory
+            Topic::create([
+                'name' => $topic['name'],
+                // Generate the URL for the image stored in public/images
+                'image' => asset('storage/images/' . $topic['image'])
+            ]);
         }
     }
 }
-
