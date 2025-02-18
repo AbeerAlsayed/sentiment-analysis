@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\JWTAuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\TopicController;
+use App\Services\SentimentAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,3 +30,8 @@ Route::middleware('auth:api')->group( function ($router) {
 Route::get('/comments-by-topic', [CommentController::class, 'getCommentsByTopic']);
 
 Route::get('topics',[TopicController::class,'index']);
+
+Route::get('/test-sentiment', function () {
+    $sentimentService = new SentimentAnalysisService();
+    return $sentimentService->evaluateModel();
+});
