@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enum\SentimentEnum;
 use App\Http\Requests\GetCommentsByTopicRequest;
+use App\Http\Requests\StoreCommentRequest;
 use App\Http\Resources\CommentResource;
 use App\Http\Resources\FilterTopicResource;
 use App\Models\Comment;
@@ -21,25 +22,18 @@ class CommentController extends Controller
     {
         $this->commentService = $commentService;
         $this->sentimentService = $sentimentService;
-
     }
 
-    public function store(Request $request)
+    public function store(StoreCommentRequest $request)
     {
-        $validated = $request->validate([
-            'topic_id' => 'required|exists:topics,id',
-            'content' => 'required|string',
-        ]);
-
+        $validated = $request->validated();
         $sentiment = $this->sentimentService->analyze($validated['content']);
-
         $comment = $this->commentService->createComment(
             auth()->user()->id,
             $validated['topic_id'],
             $validated['content'],
             $sentiment
         );
-
         return response()->json(new CommentResource($comment), 201);
     }
 
