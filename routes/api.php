@@ -22,16 +22,11 @@ Route::middleware('auth:api')->group( function ($router) {
 
 Route::middleware('auth:api')->group( function ($router) {
     Route::post('/comments', [CommentController::class, 'store']);
-    Route::get('/comments-by-user', [CommentController::class, 'getCommentsByUser']);
     Route::get('/topics-with-user-comments', [CommentController::class, 'getTopicsWithUserComments']);
-
 });
 
 Route::get('/comments-by-topic', [CommentController::class, 'getCommentsByTopic']);
 
 Route::get('topics',[TopicController::class,'index']);
 
-Route::get('/test-sentiment', function () {
-    $sentimentService = new SentimentAnalysisService();
-    return $sentimentService->evaluateModel();
-});
+

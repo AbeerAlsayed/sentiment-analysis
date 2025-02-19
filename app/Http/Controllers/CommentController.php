@@ -17,7 +17,6 @@ class CommentController extends Controller
     protected $commentService;
     protected $sentimentService;
 
-    // حقن الـ Service في الـ Controller
     public function __construct(CommentService $commentService,SentimentAnalysisService $sentimentService)
     {
         $this->commentService = $commentService;
@@ -31,82 +30,40 @@ class CommentController extends Controller
             'topic_id' => 'required|exists:topics,id',
             'content' => 'required|string',
         ]);
-        // تحليل المشاعر
+
         $sentiment = $this->sentimentService->analyze($validated['content']);
 
-        // تخزين التعليق في قاعدة البيانات
-        $comment = Comment::create([
-            'user_id' => auth()->user()->id,
-            'topic_id' => $validated['topic_id'],
-            'content' => $validated['content'],
-            'sentiment' => $sentiment,
-        ]);
+        $comment = $this->commentService->createComment(
+            auth()->user()->id,
+            $validated['topic_id'],
+            $validated['content'],
+            $sentiment
+        );
 
         return response()->json(new CommentResource($comment), 201);
     }
 
     public function getCommentsByTopic(GetCommentsByTopicRequest $request)
     {
-        dd($request);
-        $topicName = $request->input('topic_name');  // اختياري
-        $sentiment = $request->input('sentiment');    // اختياري
-
-        if ($sentiment) {
-            $sentiment = SentimentEnum::from($sentiment);  // تحويل النص إلى Enum
-        }
-
-        // إذا لم يتم اختيار topic_name، اختر أول توبيك
-        if (!$topicName) {
-            // جلب أول توبيك من قاعدة البيانات
-            $topic = Topic::first(); // أو يمكنك إضافة شرط لترتيب المواضيع إذا كنت بحاجة لذلك
-            $topicName = $topic ? $topic->name : null; // إذا كان يوجد توبيك، خذ اسمه
-        }
-
-        // الحصول على التعليقات بناءً على الفلاتر
-        $comments = $this->commentService->getCommentsByFilters($topicName, $sentiment);
-
-        // إرجاع التعليقات
-        return CommentResource::collection($comments);
-    }
-
-    public function getCommentsByUser(Request $request)
-    {
-        $user = auth()->user();
-
-        $topicId = $request->input('topic_id');
+        $topicName = $request->input('topic_name');
         $sentiment = $request->input('sentiment');
 
-        $query = Comment::where('user_id', $user->id)->with('topic');
-
-        if ($topicId) {
-            $query->where('topic_id', $topicId);
-        }
-
-        // إضافة الفلتر حسب `sentiment` إذا كان موجوداً
         if ($sentiment) {
-            $query->where('sentiment', $sentiment);
+            $sentiment = SentimentEnum::from($sentiment);
         }
-
-        // جلب التعليقات
-        $comments = $query->get();
-
-        // إرجاع التعليقات مع المواضيع باستخدام CommentResource
+        if (!$topicName) {
+            $topic = Topic::first();
+            $topicName = $topic ? $topic->name : null;
+        }
+        $comments = $this->commentService->getCommentsByFilters($topicName, $sentiment);
         return CommentResource::collection($comments);
     }
 
     public function getTopicsWithUserComments()
     {
-        $user = auth()->user();
+        $topics = $this->commentService->getTopicsWithUserComments(auth()->user());
 
-        $topics = Topic::with(['comments' => function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        }])->get();
-
-        $filteredTopics = $topics->filter(function ($topic) {
-            return $topic->comments->isNotEmpty();
-        });
-
-        return FilterTopicResource::collection($filteredTopics);
+        return FilterTopicResource::collection($topics);
     }
 
 }
