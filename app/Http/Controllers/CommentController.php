@@ -24,6 +24,8 @@ class CommentController extends Controller
         $this->sentimentService = $sentimentService;
     }
 
+    // Store new comment after data verification and sentiment analysis.
+
     public function store(StoreCommentRequest $request)
     {
         $validated = $request->validated();
@@ -36,6 +38,11 @@ class CommentController extends Controller
         );
         return response()->json(new CommentResource($comment), 201);
     }
+
+    /*
+     * Fetch comments based on topic name and rating (positive/negative).
+     * Otherwise, it will call the first topic.
+     */
 
     public function getCommentsByTopic(GetCommentsByTopicRequest $request)
     {
@@ -52,6 +59,9 @@ class CommentController extends Controller
         $comments = $this->commentService->getCommentsByFilters($topicName, $sentiment);
         return CommentResource::collection($comments);
     }
+
+
+    // Get a list of topics that the user has commented on.
 
     public function getTopicsWithUserComments()
     {
